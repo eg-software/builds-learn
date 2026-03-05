@@ -1,0 +1,25 @@
+name: Publish Service
+description: Placeholder publish composite action
+
+inputs:
+  service_name:
+    description: Service name
+    required: true
+  publish_target:
+    description: Target registry or destination
+    required: false
+    default: "ghcr.io/example-org/example-service"
+  publish_command:
+    description: Publish command to run
+    required: false
+    default: "echo publish placeholder"
+
+runs:
+  using: composite
+  steps:
+    - name: Publish placeholder
+      shell: bash
+      run: |
+        echo "Publishing service: ${{ inputs.service_name }}"
+        echo "Target: ${{ inputs.publish_target }}"
+        ${{ inputs.publish_command }}

@@ -1,0 +1,86 @@
+name: Build JavaScript
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+      - name: Ensure ESLint config exists
+        run: |
+          if [ ! -f eslint.config.js ]; then
+            printf '%s\n' 'module.exports = [' '  {' '    files: ["**/*.js"],' '    ignores: ["node_modules/**", "coverage/**"],' '    languageOptions: {' '      ecmaVersion: "latest",' '      sourceType: "commonjs",' '      globals: {' '        process: "readonly",' '        module: "readonly",' '        require: "readonly",' '        __dirname: "readonly",' '        console: "readonly"' '      }' '    },' '    rules: {' '      "no-unused-vars": ["error", { argsIgnorePattern: "^_" }]' '    }' '  },' '  {' '    files: ["tests/**/*.js"],' '    languageOptions: {' '      globals: {' '        describe: "readonly",' '        test: "readonly",' '        expect: "readonly"' '      }' '    }' '  }' '];' > eslint.config.js
+          fi
+      - name: Lint (generate HTML report)
+        if: always()
+        run: pnpm lint:report || true
+      - name: Lint
+        run: pnpm lint
+      - name: Build
+        run: pnpm build
+      - name: Test with coverage
+        run: pnpm test:ci
+      - name: Prepare combined Pages site
+        if: always()
+        run: |
+          mkdir -p site/eslint
+          cp reports/eslint/eslint-report.html site/eslint/index.html || true
+          cp -r coverage/lcov-report site/coverage || true
+          printf '%s\n' '<!doctype html>' '<html>' '  <head>' '    <meta charset="utf-8" />' '    <title>Build Reports</title>' '  </head>' '  <body>' '    <h1>Build Reports</h1>' '    <ul>' '      <li><a href="./eslint/">ESLint Report</a></li>' '      <li><a href="./coverage/">Coverage Report</a></li>' '    </ul>' '  </body>' '</html>' > site/index.html
+      - name: Upload HTML report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-build
+          path: site
+      - name: Setup Pages
+        if: always()
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        if: always()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy-pages:
+    # if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  docker-build:
+    needs: [build, deploy-pages]
+    if: always() && needs.build.result == 'success'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/reusable-docker-push.yml
+    with:
+      image_name: ${{ format('ghcr.io/{0}', github.repository) }}
+      dockerfile: Dockerfile
+      context: .
+      push_latest_on_main: true
+    secrets: inherit

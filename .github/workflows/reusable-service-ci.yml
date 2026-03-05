@@ -1,0 +1,68 @@
+name: Reusable Service Pipeline
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: Service name
+        required: true
+        type: string
+      service_dir:
+        description: Service directory
+        required: false
+        type: string
+        default: "."
+      build_command:
+        description: Build command placeholder
+        required: false
+        type: string
+        default: "echo build placeholder"
+      test_command:
+        description: Test command placeholder
+        required: false
+        type: string
+        default: "echo test placeholder"
+      publish_command:
+        description: Publish command placeholder
+        required: false
+        type: string
+        default: "echo publish placeholder"
+      publish_target:
+        description: Registry or publish destination
+        required: false
+        type: string
+        default: "ghcr.io/example-org/example-service"
+      should_publish:
+        description: Whether publish step should run
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  service-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build
+        uses: ./.github/actions/build
+        with:
+          service_name: ${{ inputs.service_name }}
+          service_dir: ${{ inputs.service_dir }}
+          build_command: ${{ inputs.build_command }}
+
+      - name: Test
+        uses: ./.github/actions/test
+        with:
+          service_name: ${{ inputs.service_name }}
+          service_dir: ${{ inputs.service_dir }}
+          test_command: ${{ inputs.test_command }}
+
+      - name: Publish
+        if: ${{ inputs.should_publish }}
+        uses: ./.github/actions/publish
+        with:
+          service_name: ${{ inputs.service_name }}
+          publish_target: ${{ inputs.publish_target }}
+          publish_command: ${{ inputs.publish_command }}

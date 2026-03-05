@@ -1,0 +1,26 @@
+name: Build Service
+description: Placeholder build composite action
+
+inputs:
+  service_name:
+    description: Service name
+    required: true
+  service_dir:
+    description: Service directory
+    required: false
+    default: "."
+  build_command:
+    description: Build command to run
+    required: false
+    default: "echo build placeholder"
+
+runs:
+  using: composite
+  steps:
+    - name: Build placeholder
+      shell: bash
+      run: |
+        echo "Building service: ${{ inputs.service_name }}"
+        echo "Directory: ${{ inputs.service_dir }}"
+        cd "${{ inputs.service_dir }}"
+        ${{ inputs.build_command }}

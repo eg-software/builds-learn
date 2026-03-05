@@ -1,0 +1,26 @@
+name: Test Service
+description: Placeholder test composite action
+
+inputs:
+  service_name:
+    description: Service name
+    required: true
+  service_dir:
+    description: Service directory
+    required: false
+    default: "."
+  test_command:
+    description: Test command to run
+    required: false
+    default: "echo test placeholder"
+
+runs:
+  using: composite
+  steps:
+    - name: Test placeholder
+      shell: bash
+      run: |
+        echo "Testing service: ${{ inputs.service_name }}"
+        echo "Directory: ${{ inputs.service_dir }}"
+        cd "${{ inputs.service_dir }}"
+        ${{ inputs.test_command }}

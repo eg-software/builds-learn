@@ -1,0 +1,30 @@
+name: Service Action
+
+on:
+  workflow_dispatch:
+    inputs:
+      service_name:
+        description: Name of new service
+        required: true
+        default: "new-service"
+      service_dir:
+        description: Directory of service
+        required: true
+        default: "."
+      should_publish:
+        description: Run publish step
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  run-service-pipeline:
+    uses: ./.github/workflows/reusable-service-ci.yml
+    with:
+      service_name: ${{ inputs.service_name }}
+      service_dir: ${{ inputs.service_dir }}
+      build_command: "echo '[stub] build ${{ inputs.service_name }}'"
+      test_command: "echo '[stub] test ${{ inputs.service_name }}'"
+      publish_command: "echo '[stub] publish ${{ inputs.service_name }}'"
+      publish_target: "ghcr.io/${{ github.repository }}/${{ inputs.service_name }}"
+      should_publish: ${{ inputs.should_publish }}
